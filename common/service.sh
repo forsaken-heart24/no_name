@@ -160,4 +160,5 @@ write /proc/sys/kernel/sched_autogroup_enabled 0
 
 # let's clear the system logs and exit with '0' because we dont want to f-around things lol
 logcat -c
+cmd notification post --tag "Sakura" --priority 3 --title "Late Start Service" --text "Hello user, sakura improved your device via tweaking stuffs, please provide your feedback at : @lunaromslore24 in telegram, Have a great day :D"
 exit 0
