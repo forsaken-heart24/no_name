@@ -87,8 +87,11 @@ function maybe_nuke_prop() {
 function write() {
     local file=$1
     local value=$2
-
-    [ "$#" -ge "2" ] && echo "$value" > $file
+    if [ "$#" -ge "2" ]; then
+        if [ -f "$file" ]; then
+            echo "$value" > $file
+        fi
+    fi
 }
 
 ########################################### effectless services #####################################
@@ -155,6 +158,17 @@ write /proc/sys/kernel/timer_mitigration 0
 write /proc/sys/kernel/sched_min_task_util_for_colocation 0
 write /proc/sys/kernel/sched_child_runs_first 1
 write /proc/sys/kernel/sched_autogroup_enabled 0
+write /proc/sys/kernel/perf_cpu_time_max_percent 10
+write /proc/sys/kernel/printk_devkmsg off
+for queue in /sys/block/*/queue; do
+    write "$queue/iostats" 0
+    write "$queue/nr_requests" 64
+done
+write /proc/sys/vm/vfs_cache_pressure 50
+write /proc/sys/vm/stat_interval 30
+write /proc/sys/vm/compaction_proactiveness 0
+write /proc/sys/vm/page-cluster 0
+write /sys/kernel/mm/lru_gen/min_ttl_ms 5000
 
 ############################################ kernel tweaks ##############################################
 
