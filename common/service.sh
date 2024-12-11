@@ -145,6 +145,9 @@ if is_bootanimation_exited; then
     resetprop ro.boot.verifiedbootstate green
     resetprop ro.boot.veritymode enforcing
     resetprop vendor.boot.vbmeta.device_state locked
+    for Disable_Log_Visibility_For_These_Apps in $(pm list packages | cut -d':' -f2); do
+        cmd package log-visibility --disable $Disable_Log_Visibility_For_These_Apps
+    done
 fi
 
 ############################################ late_start_services ############################################################
