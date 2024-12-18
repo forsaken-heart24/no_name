@@ -49,34 +49,6 @@ function string_case() {
     esac
 }
 
-function maybe_kill_daemons() {
-    local daemon_name=$1
-    local daemon_pid=$(pidof $daemon_name)
-    if [ ! -z "${daemon_pid}" ]; then
-        kill ${daemon_name}
-    fi
-}
-
-function dawn() {
-    local dir=$1
-    local the_fifty_jeez=$(du -h $dir | head -n 1 | cut -c 4-4 | string_case -l)
-    if [ "$(echo $the_fifty_jeez | grep -q m)" ] || [ "$(echo $the_fifty_jeez | grep -q g)" ]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-function sakura_features() {
-    local feature_name="$1"
-    local kamg_it="$(grep_prop "$feature_name" "/system/bin/hw/linker_binary")"
-    if [[ "$kamg_it" == "available" || "$kamg_it" == "true" ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
 function maybe_nuke_prop() {
     local variable="$@"
     if [[ ! -z "$(command -v resetprop)" && ! -z "$(resetprop $variable)" ]]; then
@@ -91,6 +63,17 @@ function write() {
         if [ -f "$file" ]; then
             echo "$value" > $file
         fi
+    fi
+}
+
+contains_reset_prop() {
+    local prop="$1"
+    local propval="$2"
+    local propswitchval="$3"
+
+    # bomb.
+    if [ "$(resetprop ${prop})" == "${propval}" ]; then
+        resetprop $prop $propswitchval
     fi
 }
 
@@ -133,18 +116,30 @@ function write() {
 
 # spoof the device to green state, making it seem like an locked device.
 if is_bootanimation_exited; then
-    for bootmodecrap in ro.bootmode ro.boot.mode vendor.boot.mode; do
-        maybe_set_prop $bootmodecrap unknown
-    done
-    for warranty_bit in ro.warranty_bit ro.vendor.warranty_bit ro.vendor.boot.warranty_bit ro.boot.warranty_bit; do
-        maybe_set_prop $warranty_bit 0
-    done
+    check_reset_prop "ro.boot.vbmeta.device_state" "locked"
+    check_reset_prop "ro.boot.verifiedbootstate" "green"
+    check_reset_prop "ro.boot.flash.locked" "1"
+    check_reset_prop "ro.boot.veritymode" "enforcing"
+    check_reset_prop "ro.boot.warranty_bit" "0"
+    check_reset_prop "ro.warranty_bit" "0"
+    check_reset_prop "ro.debuggable" "0"
+    check_reset_prop "ro.secure" "1"
+    check_reset_prop "ro.adb.secure" "1"
+    check_reset_prop "ro.build.type" "user"
+    check_reset_prop "ro.build.tags" "release-keys"
+    check_reset_prop "ro.vendor.boot.warranty_bit" "0"
+    check_reset_prop "ro.vendor.warranty_bit" "0"
+    check_reset_prop "vendor.boot.vbmeta.device_state" "locked"
+    check_reset_prop "vendor.boot.verifiedbootstate" "green"
+    check_reset_prop "ro.secureboot.lockstate" "locked"
+    # Hide that we booted from recovery when magisk is in recovery mode
+    contains_reset_prop "ro.bootmode" "recovery" "unknown"
+    contains_reset_prop "ro.boot.bootmode" "recovery" "unknown"
+    contains_reset_prop "vendor.boot.bootmode" "recovery" "unknown"
+    # nuke these mfs if they have any value
     maybe_nuke_prop persist.log.tag.LSPosed
     maybe_nuke_prop persist.log.tag.LSPosed-Bridge
     maybe_nuke_prop ro.build.selinux
-    resetprop ro.boot.verifiedbootstate green
-    resetprop ro.boot.veritymode enforcing
-    resetprop vendor.boot.vbmeta.device_state locked
     for Disable_Log_Visibility_For_These_Apps in $(pm list packages | cut -d':' -f2); do
         cmd package log-visibility --disable $Disable_Log_Visibility_For_These_Apps
     done
